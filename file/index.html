@@ -45,7 +45,7 @@
 
 <div class="card">
   <label>Base URL (form.html full URL)</label>
-  <input id="baseUrl" placeholder="https://somasekhar420.github.io/VOD/file/index.html" />
+  <input id="baseUrl" placeholder="https://somasekhar420.github.io/VOD/file/form.html" />
   <label>Filter by Date</label>
   <input type="date" id="filterDate" />
   <input type="text" id="searchInput" placeholder="Search by name/contact/Aadhaar"/>
@@ -99,7 +99,7 @@ const filterDateInput=document.getElementById('filterDate');
 // --- Token generation ---
 generateBtn.onclick=()=>{
   const token=uuid();
-  const base=baseUrlInput.value.trim()||window.location.origin+'/form.html';
+  const base=baseUrlInput.value.trim()||'https://somasekhar420.github.io/VOD/file/form.html';
   const link=base+'?token='+token;
   generatedLink.value=link;
   linkModal.classList.add('show');
@@ -146,6 +146,7 @@ refreshRecords();
 </script>
 </body>
 </html>
+
 
 
 

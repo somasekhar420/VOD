@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin Dashboard - Vehicle Entry</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+  :root{
+    --bg: linear-gradient(135deg,#ff9a9e,#fad0c4,#fbc2eb);
+    --card: rgba(255,255,255,0.1);
+    --accent:#d4af37;
+    --white:#fff;
+    --muted:#333;
+  }
+  body{
+    margin:0;
+    font-family:'Poppins',sans-serif;
+    background: var(--bg);
+    color: var(--white);
+    padding: 20px;
+  }
+  h1{color:var(--accent);}
+  .btn{padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:#000;font-weight:600;cursor:pointer;transition:0.3s;}
+  .btn:hover{background:#fff;color:var(--accent);}
+  .card{background: var(--card); padding:16px; border-radius:12px; margin-bottom:16px;}
+  table{width:100%;border-collapse:collapse;margin-top:12px;}
+  th,td{padding:8px;text-align:left;border-bottom:1px dashed rgba(255,255,255,0.2);}
+  th{color:var(--white);}
+  input,select{padding:8px;border-radius:8px;border:none;background:rgba(255,255,255,0.2);color:#000;width:100%;margin-top:4px;margin-bottom:8px;}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:999;}
+  .modal.show{display:flex;}
+  .modal-content{background:var(--card);padding:16px;border-radius:12px;width:90%;max-width:600px;}
+</style>
+</head>
+<body>
+
+<h1>Admin Dashboard — Vehicle Entry</h1>
+<div class="card actions">
+  <button id="generateBtn" class="btn">Generate Daily Link</button>
+  <button id="exportAllBtn" class="btn">Export CSV</button>
+  <button id="resetAllBtn" class="btn">Reset All</button>
+</div>
+
+<div class="card">
+  <label>Base URL (form.html full URL)</label>
+  <input id="baseUrl" placeholder="https://username.github.io/repo-name/form.html" />
+  <label>Filter by Date</label>
+  <input type="date" id="filterDate" />
+  <input type="text" id="searchInput" placeholder="Search by name/contact/Aadhaar"/>
+</div>
+
+<div class="card" style="overflow:auto;max-height:400px;">
+  <table>
+    <thead>
+      <tr>
+        <th>Actions</th>
+        <th>Name</th><th>Contact</th><th>Aadhaar</th><th>Vehicle No</th><th>Model</th><th>Type</th><th>Age</th><th>Date</th>
+      </tr>
+    </thead>
+    <tbody id="recordsBody"></tbody>
+  </table>
+</div>
+
+<!-- Modal -->
+<div id="linkModal" class="modal">
+  <div class="modal-content">
+    <h3>Generated Link</h3>
+    <input type="text" id="generatedLink" readonly style="width:100%;margin-bottom:8px;"/>
+    <div class="actions">
+      <button id="copyLinkBtn" class="btn">Copy</button>
+      <button id="openLinkBtn" class="btn">Open</button>
+    </div>
+    <button id="closeModal" class="btn" style="margin-top:12px;">Close</button>
+  </div>
+</div>
+
+<script>
+// --- Utils ---
+const LS = { get:(k)=> JSON.parse(localStorage.getItem(k)||'[]'), set:(k,v)=>localStorage.setItem(k,JSON.stringify(v)) };
+function uuid(){return 'id-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);}
+function showMsg(txt){alert(txt);}
+
+// --- Elements ---
+const generateBtn=document.getElementById('generateBtn');
+const linkModal=document.getElementById('linkModal');
+const generatedLink=document.getElementById('generatedLink');
+const copyLinkBtn=document.getElementById('copyLinkBtn');
+const openLinkBtn=document.getElementById('openLinkBtn');
+const closeModal=document.getElementById('closeModal');
+const baseUrlInput=document.getElementById('baseUrl');
+const recordsBody=document.getElementById('recordsBody');
+const exportAllBtn=document.getElementById('exportAllBtn');
+const resetAllBtn=document.getElementById('resetAllBtn');
+const searchInput=document.getElementById('searchInput');
+const filterDateInput=document.getElementById('filterDate');
+
+// --- Token generation ---
+generateBtn.onclick=()=>{
+  const token=uuid();
+  const base=baseUrlInput.value.trim()||window.location.origin+'/form.html';
+  const link=base+'?token='+token;
+  generatedLink.value=link;
+  linkModal.classList.add('show');
+  let tokens=LS.get('admin_tokens');
+  tokens.push({token, createdAt:Date.now()});
+  LS.set('admin_tokens',tokens);
+  showMsg('Link generated. Copy or Open.');
+}
+
+// --- Modal buttons ---
+copyLinkBtn.onclick=()=>{navigator.clipboard.writeText(generatedLink.value); showMsg('Copied');}
+openLinkBtn.onclick=()=>window.open(generatedLink.value,'_blank');
+closeModal.onclick=()=>linkModal.classList.remove('show');
+
+// --- Export / Reset ---
+exportAllBtn.onclick=()=>{
+  const rows=LS.get('records');
+  let csv='name,contact,aadhaar,vehicleNo,model,type,age,date\n';
+  rows.forEach(r=>{csv+=`${r.name},${r.contact},${r.aadhaar},${r.vehicleNo},${r.model},${r.type},${r.age},${r.date}\n`;});
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='records.csv'; a.click();
+}
+resetAllBtn.onclick=()=>{if(confirm('Reset all data?')){localStorage.removeItem('records'); localStorage.removeItem('admin_tokens'); refreshRecords(); showMsg('Reset done');}}
+
+// --- Records table ---
+function refreshRecords(){
+  const all=LS.get('records');
+  const q=searchInput.value.trim().toLowerCase();
+  const fd=filterDateInput.value;
+  let rows=all;
+  if(fd){ const f=new Date(fd).setHours(0,0,0,0); rows=rows.filter(r=>new Date(r.date).setHours(0,0,0,0)===f);}
+  if(q){ rows=rows.filter(r=>r.name.toLowerCase().includes(q) || r.contact.includes(q) || r.aadhaar.includes(q)); }
+  recordsBody.innerHTML='';
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>-</td>
+      <td>${r.name}</td><td>${r.contact}</td><td>${r.aadhaar}</td><td>${r.vehicleNo}</td><td>${r.model}</td><td>${r.type}</td><td>${r.age}</td><td>${new Date(r.date).toLocaleString()}</td>`;
+    recordsBody.appendChild(tr);
+  });
+}
+searchInput.oninput=refreshRecords;
+filterDateInput.onchange=refreshRecords;
+refreshRecords();
+</script>
+</body>
+</html>

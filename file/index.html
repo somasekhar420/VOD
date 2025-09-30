@@ -99,7 +99,7 @@ const filterDateInput=document.getElementById('filterDate');
 // --- Token generation ---
 generateBtn.onclick=()=>{
   const token=uuid();
-  const base=baseUrlInput.value.trim()||window.location.origin+'https://somasekhar420.github.io/VOD/file/form.html';
+  const base=baseUrlInput.value.trim()||window.location.origin+'/form.html';
   const link=base+'?token='+token;
   generatedLink.value=link;
   linkModal.classList.add('show');

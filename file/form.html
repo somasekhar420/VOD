@@ -102,17 +102,21 @@ form.addEventListener('submit', async (e)=>{
   localStorage.setItem('records',JSON.stringify(records));
   
   // --- Send to Google Sheet ---
-  try{
-    await fetch(SHEET_URL,{method:'POST',body:JSON.stringify(data),mode:'no-cors'});
-  }catch(e){console.warn('Sheet submit failed',e);}
-  
-  showMsg('Submitted successfully','success');
-  form.reset();
-});
+ try {
+    const formData = new FormData();
+    Object.keys(data).forEach(key => formData.append(key, data[key]));
+    const response = await fetch(SHEET_URL, { method: 'POST', body: formData });
+    alert('Data saved successfully!');
+} catch(e) {
+    console.warn('Sheet submit failed', e);
+    alert('Failed to save data.');
+}
+
 </script>
 
 </body>
 </html>
+
 
 
 
